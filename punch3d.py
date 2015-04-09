@@ -8,6 +8,22 @@ from OpenGL.GLUT import *
 from OpenGL.GL import *
 from sys import argv
 
+
+baudrate = 9600
+port = "/dev/ttyACM0"
+
+import serial
+import sys
+
+
+def parse_data(line):
+    M = line.split("M:")[1].strip()
+    A = line.split("A:")[1].split("M:")[0].strip()
+    M = [int(v) for v in M.split("\t")]
+    A = [int(v) for v in A.split("\t")]
+    return [A, M]
+
+
 def render_grid(grid_size=0.1, M=8, N=5, heihgt=0):
     for x in range(M):
         for y in range(N):
@@ -47,10 +63,12 @@ def opengl_init ():
     glLoadIdentity()
     glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0)
 
+import math
 angle = 0
-def render_scene():
+def render_scene(A, M):
     global angle, path
-    angle += 0.4
+#    angle += 0.4
+    angle = 360*math.atan2(M[1], M[0])/(2*3.1415)
 
     if (int(angle) % 30==0):
         init_path()
@@ -96,9 +114,23 @@ def render_segment(x,y,z, dx, dy, dz, r=0.04):
 
 def render_routine():
     init_path()
+    ser = serial.Serial(port, baudrate, timeout=1)
     while True:
-        opengl_init()
-        render_scene()
+        try:
+            line = ser.readline()
+            try:
+                A, M = parse_data(line)
+                print "acel x=%d y=%d z=%d\n" % (A[0], A[1], A[2])
+                print "Mag x=%d y=%d z=%d\n\n" % (M[0], M[1], M[2])
+                opengl_init()
+                render_scene(A, M)
+            except IndexError:
+                #sometimes in the beginning of a read we get only half of a line, which breaks the parser.
+                #here we simply ignore that sample and move on.
+                pass
+        except KeyboardInterrupt:
+            ser.close()
+            sys.exit()
 
 glutInit(argv) 
 glutInitWindowSize(1200, 1200)
