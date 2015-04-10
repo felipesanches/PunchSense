@@ -102,6 +102,24 @@ def render_scene(A, M):
     glutSwapBuffers()
 
 from math import cos, sin, sqrt
+
+def vector_cross(a, b):
+    cross = [0, 0, 0]
+    cross[0] = (a[1] * b[2]) - (a[2] * b[1])
+    cross[1] = (a[2] * b[0]) - (a[0] * b[2])
+    cross[2] = (a[0] * b[1]) - (a[1] * b[0])
+    return cross
+
+def vector_dot(a, b):
+  return (a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2])
+
+def vector_normalize(a):
+    mag = math.sqrt(vector_dot(v, v))
+    v[0] /= mag
+    v[1] /= mag
+    v[2] /= mag
+    return v
+
 def render_segment(x,y,z, dx, dy, dz, r=0.04):
     N=20
     glColor3f(0.5, 0.0, 1.0)
