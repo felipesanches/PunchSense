@@ -15,6 +15,7 @@ port = "/dev/ttyACM0"
 import serial
 import sys
 
+render_graph = False
 
 def parse_data(line):
     M = line.split("M:")[1].strip()
@@ -80,21 +81,22 @@ def render_scene(A, M):
 
     glTranslatef(0.5, 0.5, 0.0)
     glRotatef(-90 -30, 1.0, 0.0, 0.0)
-    glRotatef(angle, 0.0, 0.0, 1.0)
+    glRotatef(angle+90, 0.0, 0.0, 1.0)
     render_grid(heihgt=0.3)
 
-    glTranslatef(-0.5, -0.5, 0.0)
+    if (render_graph):
+        glTranslatef(-0.5, -0.5, 0.0)
 
-    # Set draw color to white
-    glColor3f (1.0, 1.0, 1.0)
+        # Set draw color to white
+        glColor3f (1.0, 1.0, 1.0)
 
-    x,y,z = [0.5, 0.5, 0.3]
-    for i in range(len(path)):
-        dx, dy, dz = path[i]
-        render_segment(x, y, z, dx, dy, dz)
-        x += dx
-        y += dy
-        z += dz
+        x,y,z = [0.5, 0.5, 0.3]
+        for i in range(len(path)):
+            dx, dy, dz = path[i]
+            render_segment(x, y, z, dx, dy, dz)
+            x += dx
+            y += dy
+            z += dz
 
     # Flush and swap buffers
     glutSwapBuffers()
@@ -112,8 +114,9 @@ def render_segment(x,y,z, dx, dy, dz, r=0.04):
         glVertex3fv ([x+dx+r*sin(i*2*3.1415/N), y+dy+r*cos(i*2*3.1415/N), z+dz])
         glEnd()
 
-def render_routine():
+def main_routine():
     init_path()
+    
     ser = serial.Serial(port, baudrate, timeout=1)
     while True:
         try:
@@ -135,6 +138,6 @@ def render_routine():
 glutInit(argv) 
 glutInitWindowSize(1200, 1200)
 glutCreateWindow("PunchSense")
-glutDisplayFunc(render_routine)
+glutDisplayFunc(main_routine)
 opengl_init()
 glutMainLoop()
