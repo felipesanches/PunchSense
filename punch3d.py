@@ -20,8 +20,8 @@ render_graph = False
 def parse_data(line):
     M = line.split("M:")[1].strip()
     A = line.split("A:")[1].split("M:")[0].strip()
-    M = [int(v) for v in M.split("\t")]
-    A = [int(v) for v in A.split("\t")]
+    M = [float(v) for v in M.split("\t")]
+    A = [float(v) for v in A.split("\t")]
     return [A, M]
 
 
