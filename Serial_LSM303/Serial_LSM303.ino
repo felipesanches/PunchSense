@@ -35,7 +35,7 @@ char report[80];
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Wire.begin();
   compass.init(LSM303::device_DLM);
   compass.enableDefault();
