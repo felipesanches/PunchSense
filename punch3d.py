@@ -83,7 +83,7 @@ BAD_FEEDBACK = 'data/bad_feedback.mp3'
 #hit_intensity_threashold = 20000
 
 #Adjustment for holding the Arduino with the acelerometer sensor directly in bare hands
-hit_intensity_threashold = 30000
+hit_intensity_threashold = 20000
 
 log_data = False
 baudrate = 9600
@@ -94,7 +94,7 @@ import sys
 
 render_graph = False
 
-MAX_SAMPLES=10
+MAX_SAMPLES=1
 samples = [0.0 for i in range(MAX_SAMPLES)]
 cur_sample = 0
 
@@ -103,10 +103,20 @@ def add_sample(s):
     samples[cur_sample] = s
     cur_sample = (cur_sample+1) % MAX_SAMPLES
 
+DETECT_DEBOUNCE = 10 #delay between hit detections
+                   #(measured in ammount of samples)
+
+inhibit_counter = 0
 def detect_hit():
-    global samples
-    for s in samples:
-        if s > hit_intensity_threashold:
+    global samples, cur_sample, inhibit_counter
+
+    if inhibit_counter > 0:
+        inhibit_counter -= 1
+        return False
+
+    if samples[cur_sample] > hit_intensity_threashold:
+            print "samples[%d]=%f" % (cur_sample, samples[cur_sample])
+            inhibit_counter = DETECT_DEBOUNCE
             return True
 
     return False
