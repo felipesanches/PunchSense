@@ -9,19 +9,37 @@ from OpenGL.GL import *
 from sys import argv
 
 log_data = False
-baudrate = 115200
-port = "/dev/ttyACM0"
+baudrate = 9600
+port = "/dev/ttyACM1"
 
 import serial
 import sys
 
 render_graph = False
 
+MAX_SAMPLES=10
+samples = [0.0 for i in range(MAX_SAMPLES)]
+cur_sample = 0
+
+def add_sample(s):
+    global samples, cur_sample
+    samples[cur_sample] = s
+    cur_sample = (cur_sample+1) % MAX_SAMPLES
+
+def detect_hit():
+    global samples
+    for s in samples:
+        if s > 20000:
+            return True
+
+    return False
+
 def parse_data(line):
+    #print "line: '%s'" % line
     M = line.split("M:")[1].strip()
     A = line.split("A:")[1].split("M:")[0].strip()
-    M = [float(v) for v in M.split("\t")]
-    A = [float(v) for v in A.split("\t")]
+    M = [float(v.strip()) for v in M.split("\t")]
+    A = [float(v.strip()) for v in A.split("\t")]
     return [A, M]
 
 
@@ -47,10 +65,13 @@ def init_path():
         dz = 0.04
         path.append([dx, dy, dz])
 
-def opengl_init ():
+def opengl_init (hit=False):
     "Set up several OpenGL state variables"
     # Background color
-    glClearColor (0.0, 0.0, 0.0, 0.0)
+    if (hit):
+        glClearColor (0.9, 0.6, 6.0, 0.0)
+    else:
+        glClearColor (0.0, 0.0, 0.0, 0.0)
     glEnable(GL_COLOR_MATERIAL)
     glEnable(GL_LIGHTING)
     glEnable(GL_LIGHT0);
@@ -110,11 +131,14 @@ def vector_cross(a, b):
     cross[2] = (a[0] * b[1]) - (a[1] * b[0])
     return cross
 
+def vector_module(a):
+    return math.sqrt(vector_dot(a, a))
+
 def vector_dot(a, b):
   return (a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2])
 
-def vector_normalize(a):
-    mag = math.sqrt(vector_dot(v, v))
+def vector_normalize(v):
+    mag = vector_module(v)
     v[0] /= mag
     v[1] /= mag
     v[2] /= mag
@@ -145,9 +169,17 @@ def main_routine():
                     print "acel x=%d y=%d z=%d\n" % (A[0], A[1], A[2])
                     print "Mag x=%d y=%d z=%d\n\n" % (M[0], M[1], M[2])
 
-                opengl_init()
+                add_sample(vector_module(A))
+                hit = detect_hit()
+                if (hit):
+                     #A hit has been detected.
+                     #Do something here!
+                     #print "HIT!"
+                    pass
+
+                opengl_init(hit)
                 render_scene(A, M)
-            except IndexError:
+            except IndexError, ValueError:
                 #sometimes in the beginning of a read we get only half of a line, which breaks the parser.
                 #here we simply ignore that sample and move on.
                 pass
