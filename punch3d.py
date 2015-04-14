@@ -3,14 +3,26 @@ Draws a reference grid and a randomly generated 3d path.
 We'll soon use it to plot data fetched from a 3-axis accelerometer connected to an Arduino.
 """
 
+from pygame import mixer
 import OpenGL
 from OpenGL.GLUT import *
 from OpenGL.GL import *
 from sys import argv
 
+#song and feedback sound samples 
+MAIN_THEME = 'data/main_theme.mp3'
+GOOD_FEEDBACK = 'data/good_feedback.mp3'
+BAD_FEEDBACK = 'data/bad_feedback.mp3'
+
+#Ideal adjustment for the actual boking bag setup
+#hit_intensity_threashold = 20000
+
+#Adjustment for holding the Arduino with the acelerometer sensor directly in bare hands
+hit_intensity_threashold = 30000
+
 log_data = False
 baudrate = 9600
-port = "/dev/ttyACM1"
+port = "/dev/ttyACM0"
 
 import serial
 import sys
@@ -29,7 +41,7 @@ def add_sample(s):
 def detect_hit():
     global samples
     for s in samples:
-        if s > 20000:
+        if s > hit_intensity_threashold:
             return True
 
     return False
@@ -157,6 +169,10 @@ def render_segment(x,y,z, dx, dy, dz, r=0.04):
         glEnd()
 
 def main_routine():
+    mixer.init()
+    mixer.music.load(MAIN_THEME)
+    mixer.music.play()
+
     init_path()
     ser = serial.Serial(port, baudrate, timeout=1)
 
