@@ -3,6 +3,71 @@ Draws a reference grid and a randomly generated 3d path.
 We'll soon use it to plot data fetched from a 3-axis accelerometer connected to an Arduino.
 """
 
+hit_patterns = [
+    {
+        'name': "warm-up / freestyle",
+        'start': "0:00.000",
+        'loop_length': "1:40.000",
+        'hits': [],
+        'loops': 1 #this means it will play once (it won't loop!)
+    },
+    {
+        'name': "jab, jab; jab, right",
+        'start': "1:50.000",
+        'loop_length': "0:04.000",
+        'hits': [
+            {
+                'name': "jab",
+                'time': "0:02.001",
+            },
+            {
+                'name': "jab",
+                'time': "0:02.335",
+            },
+            {
+                'name': "jab",
+                'time': "0:03.168",
+            },
+            {
+                'name': "right",
+                'time': "0:03.666",
+            },
+        ],
+        'loops': 48
+    },
+    {
+        'name': "[break]",
+        'start': "5:00.000",
+        'loop_length': "0:50.000",
+        'hits': [],
+        'loops': 1
+    },
+    {
+        'name': "jab, direto; cruzado, direto",
+        'start': "6:00.000",
+        'loop_length': "0:03.986",
+        'hits': [
+            {
+                'name': "jab",
+                'time': "0:02.668",
+            },
+            {
+                'name': "direto",
+                'time': "0:03.002",
+            },
+            {
+                'name': "cruzado",
+                'time': "0:04.496",
+            },
+            {
+                'name': "direto",
+                'time': "0:04.852",
+            },
+        ],
+        'loops': 48
+    }
+]
+
 import pygame
 import OpenGL
 from OpenGL.GLUT import *
