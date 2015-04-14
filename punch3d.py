@@ -3,7 +3,7 @@ Draws a reference grid and a randomly generated 3d path.
 We'll soon use it to plot data fetched from a 3-axis accelerometer connected to an Arduino.
 """
 
-from pygame import mixer
+import pygame
 import OpenGL
 from OpenGL.GLUT import *
 from OpenGL.GL import *
@@ -169,13 +169,15 @@ def render_segment(x,y,z, dx, dy, dz, r=0.04):
         glEnd()
 
 def main_routine():
-    mixer.init()
-    mixer.music.load(MAIN_THEME)
-    mixer.music.play()
+    pygame.mixer.init()
+    main_theme = pygame.mixer.music.load(MAIN_THEME)
+    good_sample = pygame.mixer.Sound(GOOD_FEEDBACK)
+    bad_sample = pygame.mixer.Sound(BAD_FEEDBACK)
 
     init_path()
     ser = serial.Serial(port, baudrate, timeout=1)
 
+    pygame.mixer.music.play()
     while True:
         try:
             line = ser.readline()
@@ -188,10 +190,9 @@ def main_routine():
                 add_sample(vector_module(A))
                 hit = detect_hit()
                 if (hit):
-                     #A hit has been detected.
-                     #Do something here!
-                     #print "HIT!"
-                    pass
+                    #A hit has been detected.
+                    #Do something here!
+                    print "Detected a hit at: ", pygame.mixer.music.get_pos()
 
                 opengl_init(hit)
                 render_scene(A, M)
