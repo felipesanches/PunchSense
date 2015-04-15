@@ -6,6 +6,18 @@ We'll soon use it to plot data fetched from a 3-axis accelerometer connected to 
 tolerable_error = 500 #msec
 main_theme_start_time = (60*1 + 45)
 
+#song and feedback sound samples 
+MAIN_THEME = 'data/main_theme.mp3'
+GOOD_FEEDBACK = 'data/good_feedback.ogg'
+BAD_FEEDBACK = 'data/bad_feedback.ogg'
+
+import pygame
+pygame.mixer.init()
+pygame.mixer.pre_init(44100, -16, 2, 2048)
+main_theme = pygame.mixer.music.load(MAIN_THEME)
+good_sample = pygame.mixer.Sound(GOOD_FEEDBACK)
+bad_sample = pygame.mixer.Sound(BAD_FEEDBACK)
+
 hit_patterns = [
     {
         'name': "warm-up / freestyle",
@@ -71,6 +83,8 @@ hit_patterns = [
     }
 ]
 
+player_score = 0
+
 import math
 def parse_time(s):
     minutes, seconds = s.split(":")
@@ -79,6 +93,7 @@ def parse_time(s):
     return msecs
 
 def evaluate_hit(hit_time):
+    global player_score
     min_error = None
     for pattern in hit_patterns:
         for hit in pattern['hits']:
@@ -90,21 +105,23 @@ def evaluate_hit(hit_time):
                 error = math.fabs(absolute_candidate_time - hit_time)
                 #print "error: %f candidate: %f hit_time: %f" % (error, absolute_candidate_time, hit_time)
                 if error < tolerable_error:
-                    return "GOOD (%f msecs)" % (error)
+                    good_sample.play()
+                    player_score +=1
+                    if player_score == 4:
+                        print "GREAT!"
+                        #good_sample.play() ##this is wrong! It is not time-aligned to the main theme.
+                        player_score = 0
+                    return "GOOD (%d msecs)" % (error)
                 if error < min_error or min_error == None:
                    min_error = error
-    return "BAD (%f msecs)" % (min_error)
 
-import pygame
+    player_score = 0
+    return "BAD (%d msecs)" % (min_error)
+
 import OpenGL
 from OpenGL.GLUT import *
 from OpenGL.GL import *
 from sys import argv
-
-#song and feedback sound samples 
-MAIN_THEME = 'data/main_theme.mp3'
-GOOD_FEEDBACK = 'data/good_feedback.mp3'
-BAD_FEEDBACK = 'data/bad_feedback.mp3'
 
 #Ideal adjustment for the actual boking bag setup
 #hit_intensity_threashold = 20000
@@ -270,11 +287,6 @@ def render_segment(x,y,z, dx, dy, dz, r=0.04):
         glEnd()
 
 def main_routine():
-    pygame.mixer.init()
-    main_theme = pygame.mixer.music.load(MAIN_THEME)
-    good_sample = pygame.mixer.Sound(GOOD_FEEDBACK)
-    bad_sample = pygame.mixer.Sound(BAD_FEEDBACK)
-
     init_path()
     ser = serial.Serial(port, baudrate, timeout=1)
 
