@@ -3,6 +3,9 @@ Draws a reference grid and a randomly generated 3d path.
 We'll soon use it to plot data fetched from a 3-axis accelerometer connected to an Arduino.
 """
 
+tolerable_error = 500 #msec
+main_theme_start_time = (60*1 + 45)
+
 hit_patterns = [
     {
         'name': "warm-up / freestyle",
@@ -68,6 +71,30 @@ hit_patterns = [
     }
 ]
 
+import math
+def parse_time(s):
+    minutes, seconds = s.split(":")
+    msecs = 1000*(int(minutes)*60 + float(seconds))
+#    print "s: %s (msecs: %f)" % (s, msecs)
+    return msecs
+
+def evaluate_hit(hit_time):
+    min_error = None
+    for pattern in hit_patterns:
+        for hit in pattern['hits']:
+            for i in range(pattern['loops']):
+                _start = parse_time(pattern['start'])
+                _loop_length = parse_time(pattern['loop_length'])
+                _time = parse_time(hit['time'])
+                absolute_candidate_time = _start + i*_loop_length + _time
+                error = math.fabs(absolute_candidate_time - hit_time)
+                #print "error: %f candidate: %f hit_time: %f" % (error, absolute_candidate_time, hit_time)
+                if error < tolerable_error:
+                    return "GOOD (%f msecs)" % (error)
+                if error < min_error or min_error == None:
+                   min_error = error
+    return "BAD (%f msecs)" % (min_error)
+
 import pygame
 import OpenGL
 from OpenGL.GLUT import *
@@ -115,7 +142,7 @@ def detect_hit():
         return False
 
     if samples[cur_sample] > hit_intensity_threashold:
-            print "samples[%d]=%f" % (cur_sample, samples[cur_sample])
+            #print "samples[%d]=%f" % (cur_sample, samples[cur_sample])
             inhibit_counter = DETECT_DEBOUNCE
             return True
 
@@ -172,7 +199,6 @@ def opengl_init (hit=False):
     glLoadIdentity()
     glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0)
 
-import math
 angle = 0
 def render_scene(A, M):
     global angle, path
@@ -252,7 +278,8 @@ def main_routine():
     init_path()
     ser = serial.Serial(port, baudrate, timeout=1)
 
-    pygame.mixer.music.play()
+    pygame.mixer.music.play(0, main_theme_start_time)
+
     while True:
         try:
             line = ser.readline()
@@ -267,7 +294,8 @@ def main_routine():
                 if (hit):
                     #A hit has been detected.
                     #Do something here!
-                    print "Detected a hit at: ", pygame.mixer.music.get_pos()
+                    hit_time = pygame.mixer.music.get_pos() + main_theme_start_time*1000
+                    print "Detected a %s hit at: %s" % (evaluate_hit(hit_time), hit_time)
 
                 opengl_init(hit)
                 render_scene(A, M)
