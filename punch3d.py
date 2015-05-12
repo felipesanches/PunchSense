@@ -125,6 +125,7 @@ def evaluate_hit(hit_time):
                    min_error = error
 
     player_score = 0
+    bad_sample.play()
     return "BAD (%d msecs)" % (min_error)
 
 if render_3d:
@@ -138,7 +139,7 @@ from sys import argv
 #hit_intensity_threashold = 20000
 
 #Adjustment for holding the Arduino with the acelerometer sensor directly in bare hands
-hit_intensity_threashold = 20000
+hit_intensity_threashold = 2000
 
 if arduino_bridge:
     baudrate = 9600
