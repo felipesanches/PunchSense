@@ -6,6 +6,15 @@ We'll soon use it to plot data fetched from a 3-axis accelerometer connected to 
 tolerable_error = 500 #msec
 main_theme_start_time = (60*1 + 45)
 
+
+render_3d = False
+render_graph = False
+arduino_bridge = False #read i2c data directly from RPi GPIO instad
+log_data = False
+
+if not arduino_bridge:
+    from Adafruit_LSM303 import Adafruit_LSM303
+
 #song and feedback sound samples 
 MAIN_THEME = 'data/main_theme.mp3'
 GOOD_FEEDBACK = 'data/good_feedback.ogg'
@@ -118,9 +127,11 @@ def evaluate_hit(hit_time):
     player_score = 0
     return "BAD (%d msecs)" % (min_error)
 
-import OpenGL
-from OpenGL.GLUT import *
-from OpenGL.GL import *
+if render_3d:
+    import OpenGL
+    from OpenGL.GLUT import *
+    from OpenGL.GL import *
+
 from sys import argv
 
 #Ideal adjustment for the actual boking bag setup
@@ -129,14 +140,13 @@ from sys import argv
 #Adjustment for holding the Arduino with the acelerometer sensor directly in bare hands
 hit_intensity_threashold = 20000
 
-log_data = False
-baudrate = 9600
-port = "/dev/ttyACM0"
+if arduino_bridge:
+    baudrate = 9600
+    port = "/dev/ttyACM0"
 
-import serial
+    import serial
+
 import sys
-
-render_graph = False
 
 MAX_SAMPLES=1
 samples = [0.0 for i in range(MAX_SAMPLES)]
@@ -288,15 +298,24 @@ def render_segment(x,y,z, dx, dy, dz, r=0.04):
 
 def main_routine():
     init_path()
-    ser = serial.Serial(port, baudrate, timeout=1)
+
+    if arduino_bridge:
+        ser = serial.Serial(port, baudrate, timeout=1)
+    else:
+        lsm = Adafruit_LSM303()
 
     pygame.mixer.music.play(0, main_theme_start_time)
 
     while True:
         try:
-            line = ser.readline()
+            if arduino_bridge:
+                line = ser.readline()
+            else:
+                A, M = lsm.read()
             try:
-                A, M = parse_data(line)
+                if arduino_bridge:
+                    A, M = parse_data(line)
+
                 if (log_data):
                     print "acel x=%d y=%d z=%d\n" % (A[0], A[1], A[2])
                     print "Mag x=%d y=%d z=%d\n\n" % (M[0], M[1], M[2])
@@ -309,19 +328,26 @@ def main_routine():
                     hit_time = pygame.mixer.music.get_pos() + main_theme_start_time*1000
                     print "Detected a %s hit at: %s" % (evaluate_hit(hit_time), hit_time)
 
-                opengl_init(hit)
-                render_scene(A, M)
+                if render_3d:
+                    opengl_init(hit)
+                    render_scene(A, M)
             except IndexError, ValueError:
                 #sometimes in the beginning of a read we get only half of a line, which breaks the parser.
                 #here we simply ignore that sample and move on.
                 pass
         except KeyboardInterrupt:
-            ser.close()
+            if arduino_bridge:
+                ser.close()
             sys.exit()
 
-glutInit(argv) 
-glutInitWindowSize(1200, 1200)
-glutCreateWindow("PunchSense")
-glutDisplayFunc(main_routine)
-opengl_init()
-glutMainLoop()
+if render_3d:
+    glutInit(argv) 
+    glutInitWindowSize(1200, 1200)
+    glutCreateWindow("PunchSense")
+    glutDisplayFunc(main_routine)
+    opengl_init()
+    glutMainLoop()
+else:
+    while True:
+        main_routine()
+
