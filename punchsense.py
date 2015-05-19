@@ -22,12 +22,13 @@
 ##########################################################
 
 play_samples_at_every_hit = False
-tolerable_error = 500 #msec
-main_theme_start_time = (60*1 + 45)
+tolerable_error = 125 #msec
+main_theme_start_time = 0
+#main_theme_start_time = (60*1 + 45) #hits start at approx. 1min 45s
 
 #Adjustment for holding the Arduino with the acelerometer sensor directly in bare hands
 hit_intensity_threashold = 2000
-jackpot_intensity_threashold = 3000
+jackpot_intensity_threashold = 3500
 
 render_3d = False
 render_graph = False
