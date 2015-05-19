@@ -1,7 +1,3 @@
-"""OpenGL program in Python
-Draws a reference grid and a randomly generated 3d path.
-We'll soon use it to plot data fetched from a 3-axis accelerometer connected to an Arduino.
-"""
 
 tolerable_error = 500 #msec
 main_theme_start_time = (60*1 + 45)
