@@ -6,7 +6,7 @@
 #
 # == Licensing terms ==
 #
-# (c)2015 Felipe Corrêa da Silva Sanches <juca@members.fsf.org>
+# (c)2015 Felipe Correa da Silva Sanches <juca@members.fsf.org>
 #
 # This program is free software: you can redistribute it and/or modify it under the terms of the
 # GNU Lesser General Public License as published by the Free Software Foundation,
