@@ -6,6 +6,9 @@ We'll soon use it to plot data fetched from a 3-axis accelerometer connected to 
 tolerable_error = 500 #msec
 main_theme_start_time = (60*1 + 45)
 
+#Adjustment for holding the Arduino with the acelerometer sensor directly in bare hands
+hit_intensity_threashold = 2000
+jackpot_intensity_threashold = 3000
 
 render_3d = False
 render_graph = False
@@ -19,6 +22,7 @@ if not arduino_bridge:
 MAIN_THEME = 'data/main_theme.mp3'
 GOOD_FEEDBACK = 'data/good_feedback.ogg'
 BAD_FEEDBACK = 'data/bad_feedback.ogg'
+JACKPOT_FEEDBACK = 'data/Jackpot.ogg'
 
 import pygame
 pygame.mixer.init()
@@ -26,6 +30,7 @@ pygame.mixer.pre_init(44100, -16, 2, 2048)
 main_theme = pygame.mixer.music.load(MAIN_THEME)
 good_sample = pygame.mixer.Sound(GOOD_FEEDBACK)
 bad_sample = pygame.mixer.Sound(BAD_FEEDBACK)
+jackpot_sample = pygame.mixer.Sound(JACKPOT_FEEDBACK)
 
 hit_patterns = [
     {
@@ -135,12 +140,6 @@ if render_3d:
 
 from sys import argv
 
-#Ideal adjustment for the actual boking bag setup
-#hit_intensity_threashold = 20000
-
-#Adjustment for holding the Arduino with the acelerometer sensor directly in bare hands
-hit_intensity_threashold = 2000
-
 if arduino_bridge:
     baudrate = 9600
     port = "/dev/ttyACM0"
@@ -167,6 +166,12 @@ def detect_hit():
 
     if inhibit_counter > 0:
         inhibit_counter -= 1
+        return False
+
+    if samples[cur_sample] > jackpot_intensity_threashold:
+        print "JACKPOT!"
+        jackpot_sample.play()
+        inhibit_counter = DETECT_DEBOUNCE
         return False
 
     if samples[cur_sample] > hit_intensity_threashold:
@@ -321,7 +326,9 @@ def main_routine():
                     print "acel x=%d y=%d z=%d\n" % (A[0], A[1], A[2])
                     print "Mag x=%d y=%d z=%d\n\n" % (M[0], M[1], M[2])
 
-                add_sample(vector_module(A))
+                intensity = vector_module(A)
+                add_sample(intensity)
+
                 hit = detect_hit()
                 if (hit):
                     #A hit has been detected.
