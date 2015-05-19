@@ -1,4 +1,4 @@
-
+play_samples_at_every_hit = False
 tolerable_error = 500 #msec
 main_theme_start_time = (60*1 + 45)
 
@@ -93,7 +93,7 @@ hit_patterns = [
     }
 ]
 
-player_score = 0
+player_score = None
 
 import math
 def parse_time(s):
@@ -104,6 +104,10 @@ def parse_time(s):
 
 def evaluate_hit(hit_time):
     global player_score
+
+    if player_score == None:
+		player_score = 0
+
     min_error = None
     for pattern in hit_patterns:
         for hit in pattern['hits']:
@@ -115,18 +119,11 @@ def evaluate_hit(hit_time):
                 error = math.fabs(absolute_candidate_time - hit_time)
                 #print "error: %f candidate: %f hit_time: %f" % (error, absolute_candidate_time, hit_time)
                 if error < tolerable_error:
-                    good_sample.play()
                     player_score +=1
-                    if player_score == 4:
-                        print "GREAT!"
-                        #good_sample.play() ##this is wrong! It is not time-aligned to the main theme.
-                        player_score = 0
                     return "GOOD (%d msecs)" % (error)
                 if error < min_error or min_error == None:
                    min_error = error
 
-    player_score = 0
-    bad_sample.play()
     return "BAD (%d msecs)" % (min_error)
 
 if render_3d:
@@ -298,7 +295,23 @@ def render_segment(x,y,z, dx, dy, dz, r=0.04):
         glVertex3fv ([x+dx+r*sin(i*2*3.1415/N), y+dy+r*cos(i*2*3.1415/N), z+dz])
         glEnd()
 
+def is_at_the_end_of_a_pattern(time):
+    for pattern in hit_patterns:
+        if len(pattern['hits']) > 0:
+            last_hit = pattern['hits'][-1]
+            for i in range(pattern['loops']):
+                _start = parse_time(pattern['start'])
+                _loop_length = parse_time(pattern['loop_length'])
+                _last_hit_time = parse_time(last_hit['time'])
+                _pattern_end_time = _start + i*_loop_length + _last_hit_time + 3*tolerable_error
+                error = math.fabs(_pattern_end_time - time)
+
+                if error < tolerable_error:
+        			return True
+    return False
+
 def main_routine():
+    global player_score
     init_path()
 
     if arduino_bridge:
@@ -309,6 +322,17 @@ def main_routine():
     pygame.mixer.music.play(0, main_theme_start_time)
 
     while True:
+        hit_time = pygame.mixer.music.get_pos() + main_theme_start_time*1000
+        if player_score != None and is_at_the_end_of_a_pattern(hit_time):
+
+            if play_samples_at_every_hit == False:
+                if player_score >= 3:
+                    good_sample.play()
+                else:
+                    bad_sample.play()
+
+            player_score = None
+
         try:
             if arduino_bridge:
                 line = ser.readline()
@@ -329,8 +353,13 @@ def main_routine():
                 if (hit):
                     #A hit has been detected.
                     #Do something here!
-                    hit_time = pygame.mixer.music.get_pos() + main_theme_start_time*1000
-                    print "Detected a %s hit at: %s" % (evaluate_hit(hit_time), hit_time)
+                    evaluation = evaluate_hit(hit_time)
+                    print "Detected a %s hit at: %s" % (evaluation, hit_time)
+                    if play_samples_at_every_hit:
+                        if "GOOD" in evaluation:
+                            good_sample.play()
+                        elif "BAD" in evaluation:
+                            bad_sample.play()
 
                 if render_3d:
                     opengl_init(hit)
